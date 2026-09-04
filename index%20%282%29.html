@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>MiniCraft 2D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#222;font-family:Arial,sans-serif}
+body{display:flex;align-items:center;justify-content:center}
+#wrap{width:100vw;height:100vh;position:relative;overflow:hidden;background:#5ec7ff}
+canvas{width:100%;height:100%;display:block;image-rendering:pixelated;touch-action:none}
+#cross{position:absolute;left:50%;top:50%;width:14px;height:14px;transform:translate(-50%,-50%);pointer-events:none;display:none}
+#cross:before,#cross:after{content:"";position:absolute;background:#fff8}
+#cross:before{width:14px;height:2px;top:6px;left:0}#cross:after{height:14px;width:2px;left:6px;top:0}
+#info{position:absolute;left:14px;bottom:14px;max-width:420px;padding:11px 14px;background:#526fbaee;color:#fff;border:1px solid #ffffff55;border-radius:9px;font-size:14px;line-height:1.25;text-shadow:1px 1px #345}
+#title{position:absolute;top:10px;left:14px;padding:8px 12px;color:#fff;background:#315aa8dd;border-radius:8px;font-weight:700;font-size:18px}
+#status{position:absolute;top:10px;right:14px;padding:8px 12px;color:#fff;background:#315aa8dd;border-radius:8px}
+#bar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:5px;padding:6px;background:#26344ccc;border:2px solid #111;border-radius:7px}
+.slot{width:48px;height:48px;background:#454545;border:2px solid #777;position:relative;cursor:pointer}
+.slot.selected{border-color:#fff;box-shadow:inset 0 0 0 2px #222}
+.icon{position:absolute;inset:9px;border:1px solid #333}
+.num{position:absolute;right:3px;bottom:1px;color:#fff;font-size:12px;text-shadow:1px 1px #000}
+#touch{display:none;position:absolute;inset:0;pointer-events:none}
+.tbtn{pointer-events:auto;position:absolute;width:55px;height:55px;border:2px solid #fff8;border-radius:50%;background:#26344caa;color:white;font-size:25px;touch-action:none;user-select:none}
+#jump{left:150px;bottom:100px}
+#mine{right:16px;bottom:166px}#put{right:16px;bottom:100px}#attack{right:84px;bottom:166px;background:#7a2323cc}
+#joyBase{pointer-events:auto;position:absolute;left:16px;bottom:80px;width:104px;height:104px;border-radius:50%;background:#26344c88;border:2px solid #fff8;touch-action:none}
+#joyKnob{position:absolute;left:30px;top:30px;width:44px;height:44px;border-radius:50%;background:#ffffffdd;border:2px solid #fff;pointer-events:none;transition:transform .05s linear}
+.tbtn.editing,#joyBase.editing{outline:3px dashed #ffe66d;box-shadow:0 0 0 4px #ffe66d55;cursor:move}
+#editBtn.on{background:#c98f1fdd}
+@media(pointer:coarse){#touch{display:block}#info{font-size:12px;max-width:280px;bottom:8px;left:8px}.slot{width:42px;height:42px}}
+
+#inv{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,92vw);padding:16px;background:#222e;color:#fff;border:3px solid #aaa;border-radius:8px;z-index:5}
+#inv h2{margin:0 0 10px;text-align:center}.grid{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}.cell{height:48px;background:#444;border:2px solid #777;position:relative}.cell .icon{inset:9px}.cell span{position:absolute;right:3px;bottom:1px;font-size:11px;text-shadow:1px 1px #000}
+#craft{margin-top:10px;display:flex;gap:7px;flex-wrap:wrap;justify-content:center}.craftBtn{background:#555;color:#fff;border:2px solid #888;padding:8px;border-radius:5px}
+#msg{position:absolute;left:50%;top:18%;transform:translateX(-50%);color:#fff;background:#222c;padding:8px 14px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none}
+#stats{position:absolute;top:48px;left:14px;color:#fff;text-shadow:1px 1px #000;font-weight:bold;line-height:1.5}
+#menu{position:absolute;top:52px;right:14px;display:flex;gap:5px}.mini{padding:6px 9px;color:#fff;background:#315aa8dd;border:1px solid #fff5;border-radius:6px}
+@media(pointer:coarse){#menu{top:52px;right:8px}.mini{font-size:11px}.grid{grid-template-columns:repeat(9,1fr)}.cell{height:40px}}
+
+#multi{display:none;position:absolute;inset:0;background:#07101dcc;z-index:10}
+#roomPanel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,94vw);max-height:90vh;overflow:auto;background:#273c69f5;color:#fff;border:3px solid #91b7ff;border-radius:12px;padding:18px;box-shadow:0 12px 40px #0009}
+
+#closeMultiTop{position:absolute;right:10px;top:10px;width:44px;height:44px;border:2px solid #fff8;border-radius:9px;background:#b52d3d;color:#fff;font-size:24px;font-weight:900;cursor:pointer;z-index:20;line-height:1}
+#closeMultiTop:active{transform:scale(.94)}
+#roomPanel h2{margin:0 0 12px;text-align:center;font-size:25px}.row{display:flex;gap:7px;margin:7px 0;flex-wrap:wrap}.row input{flex:1;min-width:220px;padding:13px;border-radius:7px;border:2px solid #b8cfff;background:#fff;color:#111;font-size:17px;outline:none;pointer-events:auto;user-select:text}.row input:focus{border-color:#55aaff;box-shadow:0 0 0 3px #55aaff55}
+.mbtn{padding:10px 13px;border:0;border-radius:7px;background:#fff;color:#23406e;font-weight:bold;cursor:pointer}.mbtn.dark{background:#182641;color:#fff}
+#roomCode{font-size:24px;letter-spacing:4px;text-align:center;padding:8px;background:#172746;border-radius:7px;margin:8px 0}
+#players{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.playerTag{padding:5px 8px;background:#3e609c;border-radius:15px;font-size:12px}
+#chat{height:150px;overflow:auto;background:#101a2ddd;border-radius:7px;padding:8px;font-size:13px}.chatLine{margin:3px 0}.chatName{font-weight:bold;color:#8fc1ff}
+#chatInput{flex:1}.hint{font-size:12px;color:#dbe7ff}
+#multiBtn{cursor:pointer}
+#modePanel{display:none;position:absolute;inset:0;background:#07101dcc;z-index:11}
+#modeBox{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,92vw);background:#273c69f8;color:#fff;border:3px solid #91b7ff;border-radius:12px;padding:20px;text-align:center;box-shadow:0 12px 40px #0009}
+#modeBox h2{margin:0 0 8px}.modeBtn{display:block;width:100%;margin:9px 0;padding:13px;border:2px solid #7898d0;border-radius:8px;background:#182641;color:#fff;font-weight:bold;font-size:16px;cursor:pointer}.modeBtn:hover{background:#315a99}.modeBtn.surv{background:#2f7d46}.modeBtn.creative{background:#8b5bb3}
+#xpText{font-size:11px;opacity:.9}
+
+
+#furnaceUI{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,92vw);padding:18px;background:#303030f5;color:#fff;border:3px solid #999;border-radius:9px;z-index:6;text-align:center}
+.fslot{display:inline-block;width:64px;height:64px;margin:5px;background:#444;border:2px solid #777;position:relative}.fslot .bigicon{position:absolute;inset:12px}.frow{display:flex;justify-content:center;align-items:center;gap:8px}.arrow{font-size:30px}.cookbtn{padding:10px 18px;border:0;border-radius:6px;background:#e08a32;color:#fff;font-weight:bold}.cookbtn:disabled{opacity:.45}
+#cookProgress{height:9px;background:#111;border-radius:5px;margin:10px 0;overflow:hidden}#cookProgress>div{height:100%;width:0;background:#f39a32}
+#pluginPanel{display:none;position:absolute;inset:0;background:#0009;z-index:80;align-items:center;justify-content:center}
+#pluginBox{width:min(92vw,520px);max-height:88vh;overflow:auto;background:#172033;color:#fff;border:1px solid #ffffff33;border-radius:14px;padding:18px;box-shadow:0 15px 50px #0009}
+#pluginBox h2{margin:0 0 8px}.pluginCard{background:#ffffff0d;border:1px solid #ffffff1a;border-radius:10px;padding:12px;margin:10px 0}.pluginOk{color:#6ee7a8}.pluginWarn{color:#ffd166}.fileBtn{display:block;text-align:center;padding:12px;border-radius:9px;background:#315aa8;font-weight:bold;cursor:pointer;margin:10px 0}.fileBtn input{display:none}
+
+</style>
+</head>
+<body>
+<div id="wrap">
+<canvas id="game"></canvas><div id="cross"></div>
+<div id="title">⛏ MiniCraft 2D</div><div id="status">❤️ <span id="hp">10</span> &nbsp; 🍗 <span id="food">10</span></div>
+<div id="stats">🏃 Hız: <span id="speed">Yürü</span> &nbsp; ☀️ <span id="timeText">Gündüz</span> &nbsp; ⭐ Lv.<span id="level">1</span> <span id="xpText">0/10 XP</span></div>
+<div id="menu"><button class="mini" id="modeBtn">🛡️ Survival</button><button class="mini" id="inventoryBtn">🎒 Envanter</button><button class="mini" id="saveBtn">💾 Kaydet</button><button class="mini" id="multiBtn">🌐 Multiplayer</button><button class="mini" id="editBtn">🔧 Tuşları Düzenle</button><button class="mini" id="pluginBtn">📁 Plugin</button></div>
+<div id="modePanel">
+  <div id="modeBox">
+    <h2>🎮 Oyun Modu</h2>
+    <div>Şu an: <b id="modeLabel">Survival</b></div>
+    <button class="modeBtn surv" id="survivalMode">🛡️ Survival — sıfırdan başla</button>
+    <button class="modeBtn creative" id="creativeMode">✨ Creative — sınırsız yapı</button>
+    <div id="modeHostHint" class="hint" style="display:none;color:#ffdc8a;margin:4px 0">🔒 Odada sadece kurucu (host) sunucu modunu/zorluğunu değiştirebilir</div>
+    <div style="margin-top:12px;border-top:1px solid #ffffff33;padding-top:10px">
+     <div>Zorluk: <b id="diffLabel">Normal</b></div>
+     <button class="modeBtn" id="diffEasy" style="background:#2f7d46">😌 Kolay</button>
+     <button class="modeBtn" id="diffNormal" style="background:#315a99">⚖️ Normal</button>
+     <button class="modeBtn" id="diffHard" style="background:#8b3b3b">🔥 Zor</button>
+    </div>
+    <button class="mbtn dark" id="closeMode" style="margin-top:10px">Kapat</button>
+  </div>
+</div>
+
+<div id="multi">
+ <div id="roomPanel">
+  <button id="closeMultiTop" class="multiClose" aria-label="Multiplayer penceresini kapat">✕</button>
+  <h2>🌐 Multiplayer</h2>
+  <div class="hint">📱 Telefon ↔ 💻 bilgisayar desteği: PeerJS/WebRTC ile doğrudan oyuncudan oyuncuya bağlantı kurulur. Oda bulmak için ücretsiz PeerJS Cloud sinyallemesi kullanılır; oyun verisi mümkün olduğunda doğrudan iki cihaz arasında gider.<br><span style="color:#ffdc8a">💡 İki cihazda da aynı oda kodunu kullan. Bağlantı kurulmazsa dosyayı doğrudan <b>file://</b> yerine bir HTTPS/yerel web sunucusundan açmak gerekebilir.</span></div>
+
+  <div class="row">
+   <input id="nick" type="text" autocomplete="off" maxlength="14" placeholder="Oyuncu adın">
+  </div>
+
+  <div class="row">
+   <button class="mbtn" id="createRoom">🏠 Oda Oluştur</button>
+  </div>
+
+  <div id="roomCode">ODA YOK</div>
+
+  <div class="row">
+   <input id="room" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" maxlength="12"
+          placeholder="Arkadaşının oda kodunu BURAYA yaz">
+   <button class="mbtn dark" id="joinRoom">🔑 Odaya Katıl</button>
+  </div>
+
+  <div class="row">
+   <button class="mbtn dark" id="copyRoom">📋 Kodu Kopyala</button>
+   <button class="mbtn dark" id="serverBtn">🖥️ Sunucu Adresi</button>
+   <button class="mbtn dark" id="closeMulti">🎮 Oyuna Dön</button>
+  </div>
+
+  <div><b>👥 Oyuncular</b><div id="players"></div></div>
+  <div><b>💬 Sohbet</b><div id="chat"></div>
+   <div class="row"><input id="chatInput" type="text" maxlength="120" placeholder="Mesaj yaz..."><button class="mbtn" id="sendChat">Gönder</button></div>
+  </div>
+ </div>
+</div>
+
+
+<div id="pluginPanel">
+ <div id="pluginBox">
+  <h2>📁 Oyuna Dosya Ekle</h2>
+  <div class="hint">Plugin dosyasını seçtiğinde oyun plugin kodunu yükler. 🟢 Başlat dediğinde plugin oyunun multiplayer bağlantısını üstlenebilir. Güvenmediğin dosyaları çalıştırma.</div>
+  <label class="fileBtn">📦 Plugin seç (.zip / .js / .json)<input id="pluginFile" type="file" accept=".zip,.js,.json,application/zip,application/javascript,application/json"></label>
+  <div id="pluginStatus" class="pluginCard">Henüz plugin yüklenmedi.</div>
+  <div id="pluginList"></div>
+  <button class="mbtn dark" id="closePlugin">🎮 Oyuna Dön</button>
+ </div>
+</div>
+
+<div id="inv">
+  <h2>🎒 Envanter & Crafting</h2>
+  <div id="invGrid" class="grid"></div>
+  <div id="craft">
+    <button class="craftBtn" data-craft="wood">🪵 Tahta ×4</button>
+    <button class="craftBtn" data-craft="pick">⛏️ Kazma</button>
+    <button class="craftBtn" data-craft="torch">🔥 4 Meşale</button>
+    <button class="craftBtn" data-craft="bread">🍞 Ekmek</button>
+    <button class="craftBtn" data-craft="table">🛠️ Crafting Table</button>
+    <button class="craftBtn" data-craft="furnace">🔥 Fırın</button>
+    <button class="craftBtn" onclick="openInv(false)">Kapat</button>
+  </div>
+</div>
+
+<div id="furnaceUI">
+  <h2>🔥 Fırın</h2>
+  <div class="frow">
+    <div class="fslot"><div class="bigicon" style="background:#b96b43"></div><div>🥩 Ham Et<br><b id="rawCount">0</b></div></div>
+    <div class="arrow">➡️</div>
+    <div class="fslot"><div class="bigicon" style="background:#d8943d"></div><div>🥩 Pişmiş<br><b id="cookedCount">0</b></div></div>
+  </div>
+  <div id="cookProgress"><div id="cookFill"></div></div>
+  <button class="cookbtn" id="cookOne">🔥 Eti Pişir</button>
+  <button class="mbtn dark" id="closeFurnace">Kapat</button>
+</div>
+
+<div id="info">🖥️ PC: A/D veya ←/→ hareket · Space zıpla · Shift koş · Sol tık kır · Sağ tık koy · E envanter · F saldır<br>📱 Mobil: sol alttaki joystick ile hareket, ⚔ ile diğer oyunculara vur, 🔧 Tuşları Düzenle ile tuşları sürükleyip istediğin yere taşı</div>
+<div id="msg"></div>
+
+<div id="bar"></div>
+<div id="touch">
+<div id="joyBase"><div id="joyKnob"></div></div>
+<button class="tbtn" id="jump">⤒</button>
+<button class="tbtn" id="attack">⚔</button>
+<button class="tbtn" id="mine">⛏</button><button class="tbtn" id="put">＋</button>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+const c=document.getElementById('game'),x=c.getContext('2d');x.imageSmoothingEnabled=false;
+let W=innerWidth,H=innerHeight,dpr=devicePixelRatio||1;
+function size(){W=innerWidth;H=innerHeight;dpr=devicePixelRatio||1;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',size);size();
+
+const S=32,WW=220,WH=65;
+const B={
+ air:{solid:false,color:''},grass:{solid:true,color:'#62c94f'},dirt:{solid:true,color:'#a96650'},
+ stone:{solid:true,color:'#a9a9a9'},wood:{solid:true,color:'#9a5d37'},leaves:{solid:true,color:'#48aa45'},sand:{solid:true,color:'#e2c96b'},table:{solid:true,color:'#8b5a32'},furnace:{solid:true,color:'#555'}
+};
+const types=['grass','dirt','stone','wood','leaves','sand','table','furnace'];
+const world=Array.from({length:WH},()=>Array(WW).fill('air'));
+function set(a,b,t){if(a>=0&&a<WW&&b>=0&&b<WH)world[b][a]=t}
+let ground=[];
+const VILLAGE_X=48, VILLAGE_END=72;
+function inVillageZone(x){return x>=VILLAGE_X-1 && x<=VILLAGE_END+1}
+/** Düzgün 2D ev: zemin+yan duvarlar+çatı, kapı boş */
+function buildHouse(x0,gy){
+ // Önce üstünü temizle
+ for(let dx=-1;dx<=6;dx++) for(let dy=1;dy<=6;dy++) set(x0+dx,gy-dy,'air');
+ // Zemin plakası
+ for(let dx=0;dx<=5;dx++) set(x0+dx,gy,'wood');
+ // Sol / sağ duvar (3 blok yüksek)
+ for(let dy=1;dy<=3;dy++){ set(x0,gy-dy,'wood'); set(x0+5,gy-dy,'wood'); }
+ // Arka duvar (üst sıra)
+ for(let dx=1;dx<=4;dx++) set(x0+dx,gy-3,'wood');
+ // Kapı: x0+2 ve x0+3 alt iki blok boş
+ // Pencere boşlukları zaten yan duvarda yok
+ // Düz çatı
+ for(let dx=0;dx<=5;dx++) set(x0+dx,gy-4,'wood');
+ // Çatı saçak
+ set(x0-1,gy-4,'wood'); set(x0+6,gy-4,'wood');
+ // İç: masa
+ set(x0+1,gy-1,'table');
+}
+// Arazi
+for(let i=0;i<WW;i++){
+ let g=32+Math.round(Math.sin(i*.11)*2+Math.sin(i*.035)*3);
+ ground[i]=g;
+ for(let j=g;j<WH;j++) set(i,j,j===g?'grass':j<g+5?'dirt':'stone');
+ if(!inVillageZone(i) && i%19===7){
+  for(let j=1;j<=4;j++) set(i,g-j,'wood');
+  for(let dx=-2;dx<=2;dx++) for(let dy=-6;dy<=-3;dy++)
+   if(Math.abs(dx)+Math.abs(dy+4)<4) set(i+dx,g+dy,'leaves');
+ }
+}
+// Tek köy — düz alan
+(function(){
+ const base=32;
+ for(let x=VILLAGE_X;x<=VILLAGE_END;x++){
+  ground[x]=base;
+  for(let y=0;y<base;y++) set(x,y,'air');
+  set(x,base,'dirt');
+  for(let y=base+1;y<WH;y++) set(x,y,y<base+5?'dirt':'stone');
+ }
+ buildHouse(VILLAGE_X+2, base);
+ buildHouse(VILLAGE_X+10, base);
+ buildHouse(VILLAGE_X+18, base);
+ // kuyu
+ set(VILLAGE_X+12,base-1,'stone');
+ set(VILLAGE_X+11,base-1,'stone');
+ set(VILLAGE_X+13,base-1,'stone');
+ set(VILLAGE_X+12,base,'stone');
+})();
+const p={x:(VILLAGE_X+8)*S+S/2,y:32*S-14.5,w:22,h:29,vx:0,vy:0,on:false};
+let camX=0,camY=0,keys={},selected=0,facing=1;
+let sprint=false,paused=false,invOpen=false,gameTime=0,food=10,health=10,damageCooldown=0,gameMode='survival',xp=0,level=1;
+let difficulty='normal',attackCooldown=0;
+const DIFF={easy:{dmg:.5,hunger:.55,spawnMul:1.8,label:'Kolay'},normal:{dmg:1,hunger:1,spawnMul:1,label:'Normal'},hard:{dmg:1.6,hunger:1.5,spawnMul:.55,label:'Zor'}};
+const inventory={grass:0,dirt:0,stone:0,wood:0,leaves:0,sand:0,table:0,furnace:0,torch:0,bread:0,pick:0,rawMeat:0,cookedMeat:0};
+let furnaceOpen=false,cooking=false,cookProgress=0;
+const mobs=[]; let spawnTimer=0;
+// Köylüler
+for(const vx of [VILLAGE_X+4, VILLAGE_X+12, VILLAGE_X+16, VILLAGE_X+22]){
+ mobs.push({x:vx*S+16,y:32*S-14,w:18,h:28,vx:0,vy:0,on:false,hp:10,kind:'villager',home:vx*S});
+}
+const SAVE_VERSION=2;
+let myId='p'+Math.random().toString(36).slice(2,9), myName='Oyuncu', roomCode='', peer=null, channel=null;
+const remotePlayers=new Map(); let multiplayer=false; let lastNet=0, isHost=false, peerReady=false;
+
+// BlockCraft Server Plugin bağlantısı. Aynı Wi-Fi için sunucunun IP'sini,
+// internet için herkese açık WSS/WS adresini kullanabilirsin.
+let SERVER_URL=localStorage.getItem('bc_server_url')||'';
+let activePlugin=null; let pluginChannel=null;
+function randomRoom(){return Math.random().toString(36).slice(2,8).toUpperCase()}
+function serverUrl(){
+  if(SERVER_URL)return SERVER_URL;
+  const host=location.hostname||'localhost';
+  return (location.protocol==='https:'?'wss://':'ws://')+host+':8080';
+}
+function makeChannel(){
+  if(activePlugin && typeof activePlugin.makeChannel==='function'){
+    return activePlugin.makeChannel({room:roomCode,isHost,playerId:myId,playerName:myName});
+  }
+  const ws=new WebSocket(serverUrl());
+  ws.on=function(ev,fn){
+    if(ev==='open')ws.addEventListener('open',fn);
+    else if(ev==='message')ws.addEventListener('message',e=>fn(typeof e.data==='string'?JSON.parse(e.data):e.data));
+    else if(ev==='close')ws.addEventListener('close',fn);
+    else if(ev==='error')ws.addEventListener('error',fn);
+  };
+  Object.defineProperty(ws,'open',{get:()=>ws.readyState===WebSocket.OPEN});
+  return ws;
+}
+function multiMessage(data){
+  if(!channel||!channel.open)return;
+  try{channel.send(JSON.stringify({...data,id:myId,name:myName}))}catch(e){}
+}
+function addChat(name,text){
+ let box=document.getElementById('chat'),d=document.createElement('div');d.className='chatLine';
+ d.innerHTML='<span class="chatName">'+escapeHtml(name)+':</span> '+escapeHtml(text);
+ box.appendChild(d);box.scrollTop=box.scrollHeight;
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function refreshPlayers(){
+ let box=document.getElementById('players');box.innerHTML='';
+ let self=document.createElement('span');self.className='playerTag';self.textContent='🟢 '+myName+' (sen)';box.appendChild(self);
+ for(const [id,v] of remotePlayers){let e=document.createElement('span');e.className='playerTag';e.textContent='🟢 '+v.name;box.appendChild(e)}
+}
+function updateRoomStatus(text){document.getElementById('roomCode').textContent=text}
+function setupConnection(conn){
+ channel=conn; let opened=false;
+ let timer=setTimeout(()=>{if(!opened&&channel===conn){try{conn.close()}catch(e){};multiplayer=false;peerReady=false;channel=null;updateRoomStatus('🔴 BAĞLANTI ZAMAN AŞIMI');toast('⚠️ Sunucuya bağlanılamadı. Sunucu adresini kontrol et.')}},12000);
+ conn.on('open',()=>{
+  opened=true;clearTimeout(timer);multiplayer=true;peerReady=true;
+  conn.send(JSON.stringify({type:'join',room:roomCode,role:isHost?'host':'player',id:myId,name:myName}));
+ });
+ conn.on('message',d=>{
+  try{if(activePlugin&&Array.isArray(activePlugin.messageHandlers))activePlugin.messageHandlers.forEach(fn=>{try{fn(d)}catch(e){}})}catch(e){}
+  if(!d||d.id===myId)return;
+  if(d.type==='joined'){
+   updateRoomStatus('🟢 BAĞLANDI — ODA: '+roomCode); addChat('Sistem',isHost?'Oyuncu bağlandı! 🎮':'Odaya başarıyla katıldın! 🎮');
+   multiMessage({type:'hello',x:p.x,y:p.y,facing:facing,name:myName});
+   if(isHost)multiMessage({type:'world',world:world.map(row=>row.slice()),gameTime,health,food,gameMode,difficulty});
+   updateModeButtonsAccess();
+  }else if(d.type==='hello'){
+   remotePlayers.set(d.id,{name:d.name||'Oyuncu',x:d.x,y:d.y,facing:d.facing||1,hp:10});refreshPlayers();
+   multiMessage({type:'hello',x:p.x,y:p.y,facing:facing,name:myName});
+   // Host, katılan oyuncuya mevcut dünyayı hemen gönderir.
+   if(isHost)multiMessage({type:'world',world:world.map(row=>row.slice()),gameTime,health,food,gameMode,difficulty});
+  }else if(d.type==='state'){
+   let prev=remotePlayers.get(d.id);remotePlayers.set(d.id,{name:d.name||'Oyuncu',x:d.x,y:d.y,facing:d.facing||1,hp:typeof d.hp==='number'?d.hp:(prev?prev.hp:10)});refreshPlayers();
+  }else if(d.type==='leave'){remotePlayers.delete(d.id);refreshPlayers();addChat('Sistem',(d.name||'Oyuncu')+' oyundan ayrıldı.');
+  }else if(d.type==='chat'){addChat(d.name||'Oyuncu',d.text||'');
+  }else if(d.type==='block'){if(d.x>=0&&d.y>=0&&d.x<WW&&d.y<WH){world[d.y][d.x]=d.value;renderInventory()}
+  }else if(d.type==='hit'){if(d.targetId===myId&&damageCooldown<=0){health=Math.max(0,health-(typeof d.dmg==='number'?d.dmg:1.5));damageCooldown=30;toast('⚔️ '+(d.name||'Bir oyuncu')+' sana vurdu!');updateHUD();multiMessage({type:'state',x:p.x,y:p.y,facing:facing,hp:health})}
+  }else if(d.type==='settings'){
+   if(typeof d.gameMode==='string'&&(d.gameMode==='survival'||d.gameMode==='creative')&&d.gameMode!==gameMode){gameMode=d.gameMode;if(gameMode==='creative')applyCreativeInventory();renderInventory();updateHUD();toast('🌐 Sunucu modu: '+(gameMode==='survival'?'Survival':'Creative'))}
+   if(typeof d.difficulty==='string'&&DIFF[d.difficulty])setDifficulty(d.difficulty,false);
+  }else if(d.type==='world'&&Array.isArray(d.world)){
+   for(let j=0;j<Math.min(WH,d.world.length);j++)if(Array.isArray(d.world[j]))for(let i=0;i<Math.min(WW,d.world[j].length);i++)if(typeof d.world[j][i]==='string'&&B[d.world[j][i]])world[j][i]=d.world[j][i];
+   if(typeof d.gameTime==='number')gameTime=d.gameTime;if(typeof d.health==='number')health=d.health;if(typeof d.food==='number')food=d.food;
+   if(typeof d.gameMode==='string'&&(d.gameMode==='survival'||d.gameMode==='creative')){gameMode=d.gameMode;if(gameMode==='creative')applyCreativeInventory()}
+   if(typeof d.difficulty==='string'&&DIFF[d.difficulty])setDifficulty(d.difficulty,false);renderInventory();updateHUD();toast('🌍 Dünya arkadaşından senkronize edildi!');
+  }
+ });
+ conn.on('close',()=>{clearTimeout(timer);multiplayer=false;peerReady=false;if(channel===conn)channel=null;remotePlayers.clear();refreshPlayers();updateRoomStatus(roomCode?'🔴 BAĞLANTI KESİLDİ':'ODA YOK');updateModeButtonsAccess()});
+ conn.on('error',()=>toast('⚠️ Sunucu bağlantı hatası'));
+}
+function destroyPeer(){try{if(channel)channel.close()}catch(e){};channel=null;peer=null;peerReady=false;multiplayer=false;remotePlayers.clear();refreshPlayers()}
+function leaveRoom(){if(channel){try{multiMessage({type:'leave'})}catch(e){}}destroyPeer();roomCode='';isHost=false;updateRoomStatus('ODA YOK');updateModeButtonsAccess()}
+function askServer(){
+ const current=serverUrl(); const value=prompt('BlockCraft Server adresi (örnek: ws://192.168.1.20:8080)',current);
+ if(value&&/^wss?:\/\//i.test(value)){SERVER_URL=value.replace(/\/$/,'');localStorage.setItem('bc_server_url',SERVER_URL);toast('✅ Sunucu adresi kaydedildi: '+SERVER_URL)}else if(value)toast('❌ Adres ws:// veya wss:// ile başlamalı.');
+}
+function createRoom(){
+ destroyPeer();roomCode=randomRoom();isHost=true;updateRoomStatus('⏳ SUNUCUYA BAĞLANIYOR...');
+ try{peer=makeChannel();setupConnection(peer)}catch(e){toast('⚠️ WebSocket başlatılamadı')}
+}
+function connectRoom(code){
+ destroyPeer();roomCode=String(code).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12);isHost=false;
+ if(!roomCode){toast('🔑 Oda kodu yaz!');return}updateRoomStatus('⏳ SUNUCUYA BAĞLANIYOR...');
+ try{peer=makeChannel();setupConnection(peer)}catch(e){toast('⚠️ WebSocket başlatılamadı')}
+}
+
+function sendBlock(x,y,value){multiMessage({type:'block',x,y,value})}
+
+function networkTick(){
+ if(!multiplayer||!channel||!channel.open)return;
+ let now=performance.now();if(now-lastNet<80)return;lastNet=now;
+ multiMessage({type:'state',x:p.x,y:p.y,facing:facing,hp:health});
+}
+
+function drawRemotePlayers(){
+ for(const [id,v] of remotePlayers){
+  let px=v.x-camX,py=v.y-camY;
+  if(px<-60||px>W+60||py<-60||py>H+60)continue;
+  x.fillStyle='#ffd166';x.fillRect(px-p.w/2,py-p.h/2,p.w,15);
+  x.fillStyle='#7b4b2a';x.fillRect(px-11,py-p.h/2,22,5);
+  x.fillStyle='#38bdf8';x.fillRect(px-p.w/2,py-p.h/2+15,p.w,p.h-15);
+  x.fillStyle='#111';let ex=v.facing>0?px+3:px-8;x.fillRect(ex,py-7,5,5);
+  x.fillStyle='#fff';x.fillText(v.name,px-x.measureText(v.name).width/2,py-p.h/2-19);
+  let hp=Math.max(0,Math.min(10,v.hp==null?10:v.hp));
+  x.fillStyle='#0008';x.fillRect(px-16,py-p.h/2-15,32,5);
+  x.fillStyle=hp>5?'#4caf50':hp>2?'#e0a930':'#d34848';x.fillRect(px-16,py-p.h/2-15,32*(hp/10),5);
+ }
+}
+
+function toast(t){let m=document.getElementById('msg');m.textContent=t;m.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.opacity=0,1500)}
+function updateHUD(){
+ document.getElementById('hp').textContent=Math.max(0,Math.ceil(health));
+ document.getElementById('food').textContent=Math.max(0,Math.ceil(food));
+ document.getElementById('speed').textContent=sprint?'Koşuyor!':'Yürüyor';
+ document.getElementById('timeText').textContent=(Math.sin(gameTime*.001)>0)?'Gündüz':'Gece';document.getElementById('level').textContent=level;document.getElementById('xpText').textContent=xp+'/'+(level*10)+' XP';document.getElementById('modeBtn').textContent=gameMode==='survival'?'🛡️ Survival':'✨ Creative';document.getElementById('modeLabel').textContent=gameMode==='survival'?'Survival':'Creative';
+}
+function openInv(v=!invOpen){invOpen=v;document.getElementById('inv').style.display=invOpen?'block':'none';paused=invOpen;renderInventory()}
+function renderInventory(){
+ let g=document.getElementById('invGrid');g.innerHTML='';
+ Object.keys(inventory).forEach(t=>{let q=document.createElement('div');q.className='cell';let col=B[t]?.color||({torch:'#ff9d22',bread:'#d49a4a',pick:'#8b8b8b'}[t]||'#555');q.innerHTML=`<div class="icon" style="background:${col}"></div><span>${inventory[t]}</span>`;g.appendChild(q)})
+}
+function saveGame(){
+ try{localStorage.setItem('minicraft2d_save',JSON.stringify({version:SAVE_VERSION,world,player:{x:p.x,y:p.y},inventory,food,health,gameTime,gameMode,xp,level}));toast('💾 Oyun kaydedildi!')}catch(e){toast('Kayıt başarısız')}
+}
+function loadGame(){
+ try{
+  let s=JSON.parse(localStorage.getItem('minicraft2d_save'));
+  if(!s || s.version!==SAVE_VERSION){localStorage.removeItem('minicraft2d_save');return}
+  for(let y=0;y<WH;y++)for(let i=0;i<WW;i++)world[y][i]=s.world[y][i];
+  p.x=s.player.x;p.y=s.player.y;Object.assign(inventory,s.inventory);food=s.food;health=s.health;gameTime=s.gameTime||0;gameMode=s.gameMode||'survival';xp=s.xp||0;level=s.level||1;toast('📂 Kayıt yüklendi');renderInventory();
+ }catch(e){localStorage.removeItem('minicraft2d_save')}
+}
+function addItem(t,n=1){inventory[t]=(inventory[t]||0)+n;renderInventory()}
+function mineTile(a,b){
+ if(a<0||b<0||a>=WW||b>=WH||world[b][a]==='air')return;
+ let t=world[b][a]; world[b][a]='air'; sendBlock(a,b,'air');
+ if(gameMode==='survival'){if(t==='grass')addItem('grass',1);else if(t==='dirt')addItem('dirt',1);else if(t==='stone')addItem('stone',1);
+ else if(t==='wood')addItem('wood',1);else if(t==='leaves')addItem('leaves',1);else if(t==='sand')addItem('sand',1);}
+ xp+=1;if(xp>=level*10){xp=0;level++;toast('⭐ Seviye '+level+'!');} toast('⛏️ '+t+' kırıldı');
+}
+function placeTile(a,b){
+ if(a<0||b<0||a>=WW||b>=WH||world[b][a]!=='air')return;
+ let t=types[selected];
+ if(gameMode==='creative'){
+  world[b][a]=t;sendBlock(a,b,t);
+ }else{
+  if((inventory[t]||0)<=0){toast('Bu bloktan yok!');return}
+  world[b][a]=t;inventory[t]--;renderInventory();sendBlock(a,b,t);
+ }
+ // Oyuncunun kendi üzerine blok koymasını engelle (tanımsız hitX/hitY yerine gerçek çakışma kontrolü)
+ let tl=a*S,tt=b*S,tr=tl+S,tb=tt+S;
+ let pl=p.x-p.w/2,pr=p.x+p.w/2,pt=p.y-p.h/2,pb=p.y+p.h/2;
+ if(tl<pr&&tr>pl&&tt<pb&&tb>pt){
+  world[b][a]='air';sendBlock(a,b,'air');
+  if(gameMode!=='creative'){inventory[t]=(inventory[t]||0)+1;renderInventory();}
+  toast('❌ Üzerine koyamazsın!');
+ }
+}
+function spawnMob(){
+ let side=Math.random()<.5?-1:1, mx=Math.max(3,Math.min(WW-3,Math.floor(p.x/S)+side*(8+Math.floor(Math.random()*10))));
+ if(inVillageZone(mx)) return;
+ let gy=ground[Math.max(0,Math.min(WW-1,mx))];
+ mobs.push({x:mx*S,y:(gy-1)*S-14,w:22,h:28,vx:0,vy:0,on:false,hp:3,kind:'zombie'});
+}
+function mobSolid(qx,qy){return solid(qx,qy)}
+function updateMobs(){
+ spawnTimer++;
+ let zCount=mobs.filter(m=>m.kind!=='villager').length;
+ if(gameMode==='survival' && Math.sin(gameTime*.001)<0 && spawnTimer>420*DIFF[difficulty].spawnMul && zCount<6){spawnTimer=0;spawnMob()}
+ for(let i=mobs.length-1;i>=0;i--){
+  let m=mobs[i];
+  if(m.kind==='villager'){
+   if(Math.random()<0.015) m.vx=(Math.random()-.5)*1.4;
+   if(m.home!=null && Math.abs(m.x-m.home)>140) m.vx=Math.sign(m.home-m.x)*.9;
+   m.vy=Math.min(10,m.vy+.4);
+  }else{
+   let dir=Math.sign(p.x-m.x);
+   m.vx+=(dir*.35-m.vx)*.15; m.vy=Math.min(10,m.vy+.4);
+  }
+  let nx=m.x+m.vx; if(!mobSolid(nx-m.w/2,m.y-m.h/2)&&!mobSolid(nx+m.w/2,m.y+m.h/2-2))m.x=nx;else m.vx=0;
+  let ny=m.y+m.vy;if(!mobSolid(m.x-m.w/2,ny-m.h/2)&&!mobSolid(m.x+m.w/2,ny+m.h/2-2)){m.y=ny;m.on=false}else{m.on=m.vy>0;m.vy=0}
+  if(m.kind!=='villager' && gameMode==='survival'&&Math.abs(m.x-p.x)<28&&Math.abs(m.y-p.y)<30&&damageCooldown<=0){
+   health-=1*DIFF[difficulty].dmg;damageCooldown=60;toast('🧟 Zombi sana vurdu!');
+  }
+  if(m.hp<=0){
+   mobs.splice(i,1);
+   if(m.kind==='villager') toast('😢 Köylü öldü');
+   else {addItem('rawMeat',1);toast('🥩 Çiğ et düştü!')}
+  }
+ }
+ if(damageCooldown>0)damageCooldown--;
+ if(attackCooldown>0)attackCooldown--;
+}
+function drawMobs(){
+ for(const m of mobs){
+  let px=m.x-camX,py=m.y-camY;
+  if(m.kind==='villager'){
+   // yeşil cübbe + ten
+   x.fillStyle='#5a9e4a';x.fillRect(px-m.w/2,py-2,m.w,m.h/2+2);
+   x.fillStyle='#f0c8a0';x.fillRect(px-8,py-m.h/2,16,14);
+   x.fillStyle='#3d6b30';x.fillRect(px-m.w/2,py+8,m.w,12);
+   x.fillStyle='#111';x.fillRect(px-5,py-m.h/2+5,3,3);x.fillRect(px+2,py-m.h/2+5,3,3);
+   x.fillStyle='#c45a3a';x.fillRect(px-3,py-m.h/2+10,6,2); // burun
+  }else{
+   x.fillStyle='#4d9b55';x.fillRect(px-m.w/2,py-m.h/2,m.w,m.h);
+   x.fillStyle='#75bd68';x.fillRect(px-m.w/2,py-m.h/2,m.w,14);
+   x.fillStyle='#111';x.fillRect(px-7,py-7,4,4);x.fillRect(px+4,py-7,4,4);
+   x.fillStyle='#fff';x.fillRect(px-9,py+9,18,3);
+  }
+ }
+}
+function timeOverlay(){
+ let night=Math.max(0,-Math.sin(gameTime*.001));
+ if(night>.05){x.fillStyle=`rgba(10,20,65,${night*.48})`;x.fillRect(0,0,W,H)}
+}
+
+
+function openFurnace(){
+ furnaceOpen=true;paused=true;document.getElementById('furnaceUI').style.display='block';updateFurnaceUI();
+}
+function closeFurnace(){
+ furnaceOpen=false;paused=false;document.getElementById('furnaceUI').style.display='none';
+}
+function updateFurnaceUI(){
+ document.getElementById('rawCount').textContent=inventory.rawMeat||0;
+ document.getElementById('cookedCount').textContent=inventory.cookedMeat||0;
+ document.getElementById('cookFill').style.width=(cookProgress*100)+'%';
+ document.getElementById('cookOne').disabled=cooking||inventory.rawMeat<=0;
+}
+function startCooking(){
+ if(cooking||inventory.rawMeat<=0)return;
+ inventory.rawMeat--;cooking=true;cookProgress=0;updateFurnaceUI();
+ let start=performance.now(),duration=3500;
+ function tick(){
+  cookProgress=Math.min(1,(performance.now()-start)/duration);updateFurnaceUI();
+  if(cookProgress>=1){inventory.cookedMeat++;cooking=false;cookProgress=0;toast('🥩 Et pişti! +4 açlık');renderInventory();updateFurnaceUI()}
+  else requestAnimationFrame(tick);
+ }
+ requestAnimationFrame(tick);
+}
+
+function solidRect(l,t,r,b){
+ let x0=Math.floor(l/S),x1=Math.floor((r-0.001)/S);
+ let y0=Math.floor(t/S),y1=Math.floor((b-0.001)/S);
+ for(let yy=y0;yy<=y1;yy++)for(let xx=x0;xx<=x1;xx++){
+  if(xx<0||xx>=WW||yy<0||yy>=WH) return true;
+  if(B[world[yy][xx]]?.solid) return true;
+ }
+ return false;
+}
+function solid(l,t){return solidRect(l,t,l+1,t+1)}
+
+function movePlayer(){
+ let left=keys.ArrowLeft||keys.a||keys.A, right=keys.ArrowRight||keys.d||keys.D;
+ let jump=keys[' ']||keys.ArrowUp||keys.w||keys.W;
+ let dir=(right?1:0)-(left?1:0);
+ if(joyActive && Math.abs(joyDX)>.12)dir=Math.max(-1,Math.min(1,joyDX*1.3));
+ if(joyActive && joyDY<-.6)jump=true;
+ sprint=!!((keys.Shift||(joyActive&&Math.abs(joyDX)>.85))&&dir!==0);
+ let accel=sprint?.72:.52, max=sprint?7.2:5.0;
+ if(dir){
+  p.vx+=(dir*accel-p.vx)*.24;
+  facing=dir>0?1:-1;
+ }else p.vx*=.78;
+ if(Math.abs(p.vx)<.03)p.vx=0;
+ p.vx=Math.max(-max,Math.min(max,p.vx));
+
+ if(jump && p.on && !keys._jumpLatch){p.vy=-10.5;p.on=false;keys._jumpLatch=1}
+ if(!jump)keys._jumpLatch=0;
+
+ p.vy=Math.min(12,p.vy+.48);
+
+ let nx=p.x+p.vx;
+ if(!solidRect(nx-p.w/2,p.y-p.h/2,nx+p.w/2,p.y+p.h/2-1)) p.x=nx;
+ else{
+  let step=0;
+  while(Math.abs(p.vx)>0.1 && step<Math.ceil(Math.abs(p.vx)+1)){
+   let sx=Math.sign(p.vx);
+   if(!solidRect(p.x+sx-p.w/2,p.y-p.h/2,p.x+sx+p.w/2,p.y+p.h/2-1))p.x+=sx;
+   else break;
+   step++;
+  }
+  p.vx=0;
+ }
+
+ let ny=p.y+p.vy;
+ if(!solidRect(p.x-p.w/2,ny-p.h/2,p.x+p.w/2,ny+p.h/2)){
+  p.y=ny;p.on=false;
+ }else{
+  if(p.vy>0){
+   let ty=Math.floor((ny+p.h/2)/S);
+   p.y=ty*S-p.h/2-.01;
+   p.on=true;
+  }else{
+   let ty=Math.floor((ny-p.h/2)/S);
+   p.y=(ty+1)*S+p.h/2+.01;
+  }
+  p.vy=0;
+ }
+
+ p.x=Math.max(p.w/2,Math.min(WW*S-p.w/2,p.x));
+ if(p.y>WH*S+100){
+  p.x=9*S+S/2;p.y=ground[9]*S-p.h/2;p.vy=0;
+  health=Math.max(1,health-2);toast('💥 Düştün!');
+ }
+
+ if(dir && sprint) food=Math.max(0,food-.0018*DIFF[difficulty].hunger);
+ else if(dir) food=Math.max(0,food-.0006*DIFF[difficulty].hunger);
+}
+
+function drawSky(){
+ let grad=x.createLinearGradient(0,0,0,H);
+ grad.addColorStop(0,'#54c6ff');grad.addColorStop(.68,'#9ee4ff');grad.addColorStop(1,'#d8f4ff');
+ x.fillStyle=grad;x.fillRect(0,0,W,H);
+ let sun=gameTime<9000 || gameTime>21000;
+ if(sun){
+  x.fillStyle='#ffe66d';x.beginPath();x.arc(W-110,92,30,0,Math.PI*2);x.fill();
+ }else{
+  x.fillStyle='#f4f7ff';x.beginPath();x.arc(W-110,92,24,0,Math.PI*2);x.fill();
+ }
+}
+
+function drawBlock(t,px,py){
+ let col=B[t]?.color||'#777';
+ x.fillStyle=col;x.fillRect(px,py,S,S);
+ if(t==='grass'){
+  x.fillStyle='#4caf3e';x.fillRect(px,py,S,7);
+  x.fillStyle='#8a563e';x.fillRect(px,py+7,S,S-7);
+ }else if(t==='dirt'){
+  x.fillStyle='#b87558';x.fillRect(px+4,py+8,4,4);x.fillRect(px+22,py+19,3,3);
+ }else if(t==='stone'){
+  x.fillStyle='#8f8f8f';x.fillRect(px+5,py+6,6,4);x.fillRect(px+20,py+22,5,4);
+ }else if(t==='wood'){
+  x.fillStyle='#704126';x.fillRect(px+6,py,4,S);x.fillRect(px+21,py,4,S);
+ }else if(t==='leaves'){
+  x.fillStyle='#348b38';x.fillRect(px+5,py+5,22,22);
+ }else if(t==='sand'){
+  x.fillStyle='#f0da7d';x.fillRect(px+8,py+7,3,3);x.fillRect(px+22,py+20,3,3);
+ }else if(t==='table'){
+  x.fillStyle='#5d351e';x.fillRect(px+4,py+7,24,7);x.fillRect(px+7,py+14,5,18);x.fillRect(px+20,py+14,5,18);
+ }else if(t==='furnace'){
+  x.fillStyle='#252525';x.fillRect(px+6,py+7,20,20);
+  x.fillStyle='#e28a32';x.fillRect(px+12,py+16,8,8);
+ }
+ x.strokeStyle='#0002';x.strokeRect(px+.5,py+.5,S-1,S-1);
+}
+
+function drawWorld(){
+ let sx=Math.max(0,Math.floor(camX/S)-1), ex=Math.min(WW-1,Math.ceil((camX+W)/S)+1);
+ let sy=Math.max(0,Math.floor(camY/S)-1), ey=Math.min(WH-1,Math.ceil((camY+H)/S)+1);
+ for(let yy=sy;yy<=ey;yy++)for(let xx=sx;xx<=ex;xx++){
+  let t=world[yy][xx];if(t==='air')continue;
+  drawBlock(t,xx*S-camX,yy*S-camY);
+ }
+}
+
+function drawPlayer(){
+ let px=p.x-camX,py=p.y-camY;
+ // shadow
+ x.fillStyle='#0003';x.beginPath();x.ellipse(px,py+p.h/2+3,15,4,0,0,Math.PI*2);x.fill();
+ // legs
+ x.fillStyle='#274f9d';x.fillRect(px-9,py+5,7,10);x.fillRect(px+2,py+5,7,10);
+ // body
+ x.fillStyle='#3b82d0';x.fillRect(px-p.w/2,py-1,p.w,16);
+ // head
+ x.fillStyle='#ffd39b';x.fillRect(px-11,py-p.h/2,22,16);
+ x.fillStyle='#70442b';x.fillRect(px-11,py-p.h/2,22,5);
+ // facing eye + nose so direction is obvious
+ let ex=facing>0?px+3:px-8;
+ x.fillStyle='#111';x.fillRect(ex,py-7,5,5);
+ x.fillStyle='#ffd39b';
+ if(facing>0)x.fillRect(px+9,py-4,4,5);else x.fillRect(px-13,py-4,4,5);
+ // arm
+ x.fillStyle='#ffd39b';
+ x.fillRect(facing>0?px+11:px-15,py+1,4,11);
+ // target indicator
+ let tx=Math.floor((p.x+facing*S*1.15)/S),ty=Math.floor(p.y/S);
+ if(tx>=0&&tx<WW&&ty>=0&&ty<WH){
+  x.strokeStyle='#fff';x.lineWidth=2;
+  x.strokeRect(tx*S-camX+2,ty*S-camY+2,S-4,S-4);x.lineWidth=1;
+ }
+}
+
+function updateCamera(){
+ let targetX=p.x-W/2,targetY=p.y-H*.48;
+ camX+=(Math.max(0,Math.min(WW*S-W,targetX))-camX)*.12;
+ camY+=(Math.max(0,Math.min(WH*S-H,targetY))-camY)*.12;
+ if(WW*S<W)camX=0;
+ if(WH*S<H)camY=0;
+}
+
+function updateGame(){
+ if(paused)return;
+ movePlayer();
+ updateMobs();
+ gameTime=(gameTime+.55)%30000;
+ if(gameMode==='survival' && food<=0)health=Math.max(0,health-.002*DIFF[difficulty].dmg);
+ if(health<=0){
+  health=10;food=8;p.x=9*S+S/2;p.y=ground[9]*S-p.h/2;p.vx=0;p.vy=0;
+  toast('❤️ Yeniden doğdun!');
+ }
+ updateCamera();
+ updateHUD();
+}
+
+function drawGame(){
+ drawSky();
+ drawWorld();
+ drawMobs();
+ drawRemotePlayers();
+ drawPlayer();
+ timeOverlay();
+ networkTick();
+}
+
+let lastFrame=performance.now();
+function gameLoop(now){
+ let dt=Math.min(40,now-lastFrame);lastFrame=now;
+ // Run a frame-rate independent amount of game updates.
+ if(!paused){
+  const steps=Math.max(1,Math.min(3,Math.round(dt/16.67)));
+  for(let i=0;i<steps;i++)updateGame();
+ }
+ drawGame();
+ requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);
+
+// PC keyboard controls
+addEventListener('keydown',e=>{
+ if(['ArrowLeft','ArrowRight','ArrowUp',' ','a','d','w','A','D','W','Shift'].includes(e.key))e.preventDefault();
+ keys[e.key]=1;
+ if(e.key.toLowerCase()==='m' && !invOpen && !furnaceOpen){document.getElementById('modePanel').style.display='block';}
+ if(e.key==='Escape'){
+  if(furnaceOpen)closeFurnace();
+  else if(invOpen)openInv(false);
+  else if(document.getElementById('multi').style.display==='block')closeMultiplayer();
+ }
+ if(/^[1-8]$/.test(e.key)){selected=Number(e.key)-1;drawBar()}
+ if(e.key.toLowerCase()==='e' && !furnaceOpen)openInv();
+ if(e.key.toLowerCase()==='r' && !invOpen && !furnaceOpen && food<10 && inventory.bread>0){
+  inventory.bread--;food=Math.min(10,food+3);renderInventory();toast('🍞 Ekmek yedin! +3 açlık');
+ }
+ if(e.key.toLowerCase()==='c' && !invOpen && !furnaceOpen && food<10 && inventory.cookedMeat>0){
+  inventory.cookedMeat--;food=Math.min(10,food+4);renderInventory();toast('🥩 Pişmiş et yedin! +4 açlık');
+ }
+ if(e.key.toLowerCase()==='f' && !invOpen && !furnaceOpen)attack();
+});
+addEventListener('keyup',e=>{keys[e.key]=0});
+
+function tryOpenStation(a,b){
+ let t=world[b]?.[a];if(t!=='furnace'&&t!=='table')return false;
+ if(Math.hypot(a*S+16-p.x,b*S+16-p.y)>S*2.2)return false;
+ if(t==='furnace')openFurnace();else openInv(true);
+ return true;
+}
+
+function eventTile(e){
+ let r=c.getBoundingClientRect();return [Math.floor((e.clientX-r.left+camX)/S),Math.floor((e.clientY-r.top+camY)/S)]
+}
+c.oncontextmenu=e=>e.preventDefault();
+c.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='touch')return;
+ let [a,b]=eventTile(e),cx=a*S+16,cy=b*S+16;
+ if(a<0||b<0||a>=WW||b>=WH||Math.hypot(cx-p.x,cy-p.y)>S*5)return;
+ // Sadece karakterin baktığı taraftaki blokla etkileş.
+ let targetSide = a*S+S/2-p.x;
+ if(targetSide*facing < -S*0.15)return;
+ if(Math.abs(targetSide)>S*5)return;
+ if(e.button===0){if(tryOpenStation(a,b))return;mineTile(a,b);}
+ if(e.button===2)placeTile(a,b);
+});
+function drawBar(){let bar=document.getElementById('bar');bar.innerHTML='';types.forEach((t,i)=>{let s=document.createElement('div');s.className='slot'+(i===selected?' selected':'');s.innerHTML='<div class="icon" style="background:'+B[t].color+'"></div><span class="num">'+(i+1)+'</span>';s.onclick=()=>{selected=i;drawBar()};bar.appendChild(s)})}drawBar();
+
+function hold(id,key){let el=document.getElementById(id);let on=e=>{if(editMode)return;e.preventDefault();keys[key]=1},off=e=>{if(editMode)return;e.preventDefault();keys[key]=0};['pointerdown','touchstart'].forEach(z=>el.addEventListener(z,on,{passive:false}));['pointerup','pointercancel','pointerleave','touchend'].forEach(z=>el.addEventListener(z,off,{passive:false}))}
+hold('jump',' ');
+
+// --- Mobile joystick ---
+let joyActive=false,joyDX=0,joyDY=0,joyPid=null;
+const joyBase=document.getElementById('joyBase'),joyKnob=document.getElementById('joyKnob');
+function updateJoy(e){
+ let r=joyBase.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+ let dx=e.clientX-cx,dy=e.clientY-cy,max=r.width/2-14,dist=Math.hypot(dx,dy);
+ if(dist>max){dx=dx/dist*max;dy=dy/dist*max}
+ joyDX=dx/max;joyDY=dy/max;
+ joyKnob.style.transform='translate('+dx+'px,'+dy+'px)';
+}
+function endJoy(e){
+ if(e.pointerId!==joyPid)return;
+ joyActive=false;joyDX=0;joyDY=0;joyPid=null;joyKnob.style.transform='translate(0,0)';
+}
+joyBase.addEventListener('pointerdown',e=>{
+ if(editMode)return;
+ e.preventDefault();joyActive=true;joyPid=e.pointerId;
+ try{joyBase.setPointerCapture(e.pointerId)}catch(err){}
+ updateJoy(e);
+});
+joyBase.addEventListener('pointermove',e=>{if(joyActive&&e.pointerId===joyPid){e.preventDefault();updateJoy(e)}});
+joyBase.addEventListener('pointerup',endJoy);
+joyBase.addEventListener('pointercancel',endJoy);
+joyBase.addEventListener('pointerleave',e=>{if(joyActive&&e.pointerId===joyPid)endJoy(e)});
+
+// --- Draggable mobile control layout ---
+let editMode=false;
+const LAYOUT_KEY='minicraft2d_layout';
+function draggableEls(){return document.querySelectorAll('.tbtn,#joyBase')}
+function saveLayout(){
+ let layout={};
+ draggableEls().forEach(el=>{layout[el.id]={left:el.style.left,top:el.style.top}});
+ try{localStorage.setItem(LAYOUT_KEY,JSON.stringify(layout))}catch(e){}
+}
+function loadLayout(){
+ try{
+  let l=JSON.parse(localStorage.getItem(LAYOUT_KEY)||'null');if(!l)return;
+  Object.keys(l).forEach(id=>{
+   let el=document.getElementById(id);if(!el||!l[id])return;
+   if(l[id].left){el.style.left=l[id].left;el.style.right='auto'}
+   if(l[id].top){el.style.top=l[id].top;el.style.bottom='auto'}
+  });
+ }catch(e){}
+}
+function makeDraggable(el){
+ let dragPid=null,sx=0,sy=0,ex=0,ey=0;
+ el.addEventListener('pointerdown',e=>{
+  if(!editMode)return;
+  e.preventDefault();e.stopPropagation();
+  dragPid=e.pointerId;try{el.setPointerCapture(dragPid)}catch(err){}
+  let r=el.getBoundingClientRect();
+  el.style.left=r.left+'px';el.style.top=r.top+'px';el.style.right='auto';el.style.bottom='auto';
+  sx=e.clientX;sy=e.clientY;ex=r.left;ey=r.top;
+ });
+ el.addEventListener('pointermove',e=>{
+  if(!editMode||e.pointerId!==dragPid)return;
+  e.preventDefault();
+  let nx=Math.max(0,Math.min(innerWidth-el.offsetWidth,ex+(e.clientX-sx)));
+  let ny=Math.max(0,Math.min(innerHeight-el.offsetHeight,ey+(e.clientY-sy)));
+  el.style.left=nx+'px';el.style.top=ny+'px';
+ });
+ function stop(e){if(e.pointerId===dragPid)dragPid=null}
+ el.addEventListener('pointerup',stop);
+ el.addEventListener('pointercancel',stop);
+}
+draggableEls().forEach(makeDraggable);
+loadLayout();
+document.getElementById('editBtn').onclick=()=>{
+ editMode=!editMode;
+ let btn=document.getElementById('editBtn');
+ btn.textContent=editMode?'✅ Bitti (Kaydet)':'🔧 Tuşları Düzenle';
+ btn.classList.toggle('on',editMode);
+ draggableEls().forEach(el=>el.classList.toggle('editing',editMode));
+ keys={};joyActive=false;joyDX=0;joyDY=0;joyKnob.style.transform='translate(0,0)';
+ if(editMode)toast('🔧 Tuşları sürükleyerek istediğin yere taşı');
+ else{saveLayout();toast('✅ Tuş düzeni kaydedildi')}
+};
+
+function attack(){
+ if(attackCooldown>0)return;
+ attackCooldown=24;
+ if(!multiplayer||remotePlayers.size===0){toast('⚔️ Kimse menzilde değil');return}
+ let bestId=null,bestDist=1e9;
+ for(const [id,v] of remotePlayers){
+  let dx=v.x-p.x, dy=v.y-p.y;
+  if(Math.abs(dy)>36)continue;
+  if(Math.abs(dx)>6 && Math.sign(dx)!==facing)continue;
+  let dist=Math.hypot(dx,dy);
+  if(dist<52 && dist<bestDist){bestDist=dist;bestId=id}
+ }
+ if(bestId){
+  multiMessage({type:'hit',targetId:bestId,dmg:1.5});
+  toast('⚔️ Vurdun!');
+ }else toast('⚔️ Kimse menzilde değil');
+}
+function mobileEdit(put){
+ let dir=facing,a=Math.floor((p.x+dir*S*1.1)/S),b=Math.floor(p.y/S);
+ if(a<0||b<0||a>=WW||b>=WH)return;
+ if(put)placeTile(a,b);else mineTile(a,b);
+}
+document.getElementById('mine').onclick=()=>{if(!editMode)mobileEdit(false)};
+document.getElementById('put').onclick=()=>{if(!editMode)mobileEdit(true)};
+document.getElementById('attack').onclick=()=>{if(!editMode)attack()};
+
+document.getElementById('inventoryBtn').onclick=()=>openInv();
+document.getElementById('saveBtn').onclick=saveGame;
+document.getElementById('cookOne').onclick=startCooking;
+document.getElementById('closeFurnace').onclick=closeFurnace;
+document.querySelectorAll('[data-craft]').forEach(b=>b.onclick=()=>{
+ let t=b.dataset.craft,ok=false;
+ if(t==='wood'&&inventory.wood>=1){inventory.wood--;inventory.wood+=4;ok=true;toast('🪵 4 tahta üretildi')}
+ else if(t==='pick'&&inventory.wood>=3&&inventory.stone>=2){inventory.wood-=3;inventory.stone-=2;inventory.pick++;ok=true;toast('⛏️ Kazma üretildi')}
+ else if(t==='torch'&&inventory.wood>=1&&inventory.stone>=1){inventory.wood--;inventory.stone--;inventory.torch+=4;ok=true;toast('🔥 4 meşale üretildi')}
+ else if(t==='bread'&&inventory.leaves>=3){inventory.leaves-=3;inventory.bread++;ok=true;toast('🍞 Ekmek üretildi')}
+ else if(t==='table'&&inventory.wood>=4){inventory.wood-=4;inventory.table++;ok=true;toast('🛠️ Crafting Table üretildi')}
+ else if(t==='furnace'&&inventory.stone>=8){inventory.stone-=8;inventory.furnace++;ok=true;toast('🔥 Fırın üretildi')}
+ if(!ok)toast('❌ Malzeme yetmiyor');
+ renderInventory();
+});
+
+function setGameMode(mode,newWorld=true){
+ gameMode=mode;
+ if(newWorld){
+  // Start clean: no starter stacks or food.
+  Object.keys(inventory).forEach(k=>inventory[k]=0);
+  food=10;health=10;xp=0;level=1;
+  p.x=9*S+S/2;p.y=ground[9]*S-p.h/2;p.vx=0;p.vy=0;
+  mobs.length=0;
+  localStorage.removeItem('minicraft2d_save');
+  toast(mode==='survival'?'🛡️ Survival başladı! Envanter boş.':'✨ Creative başladı! Sınırsız bloklar aktif.');
+ }
+ renderInventory();updateHUD();openInv(false);
+}
+function setDifficulty(d,broadcast=true){
+ if(!DIFF[d])return;
+ difficulty=d;
+ document.getElementById('diffLabel').textContent=DIFF[d].label;
+ toast('⚖️ Zorluk: '+DIFF[d].label);
+ if(broadcast && isHost && multiplayer)multiMessage({type:'settings',gameMode,difficulty});
+}
+function updateModeButtonsAccess(){
+ let locked=multiplayer && !isHost;
+ ['survivalMode','creativeMode','diffEasy','diffNormal','diffHard'].forEach(id=>{
+  let el=document.getElementById(id);if(el)el.disabled=locked;
+ });
+ document.getElementById('modeHostHint').style.display=locked?'block':'none';
+}
+function applyCreativeInventory(){
+ if(gameMode!=='creative')return;
+ inventory.grass=999;inventory.dirt=999;inventory.stone=999;inventory.wood=999;
+ inventory.leaves=999;inventory.sand=999;inventory.table=999;inventory.furnace=999;
+ inventory.torch=999;inventory.bread=999;inventory.pick=999;inventory.rawMeat=999;inventory.cookedMeat=999;
+}
+
+loadGame();
+
+document.getElementById('modeBtn').onclick=()=>{
+ document.getElementById('modePanel').style.display='block';
+ updateHUD();
+};
+document.getElementById('closeMode').onclick=()=>document.getElementById('modePanel').style.display='none';
+document.getElementById('modePanel').addEventListener('click',e=>{if(e.target.id==='modePanel')e.currentTarget.style.display='none'});
+document.getElementById('survivalMode').onclick=()=>{
+ document.getElementById('modePanel').style.display='none';setGameMode('survival',true);
+ if(isHost&&multiplayer)multiMessage({type:'settings',gameMode,difficulty});
+};
+document.getElementById('creativeMode').onclick=()=>{
+ document.getElementById('modePanel').style.display='none';
+ setGameMode('creative',true);applyCreativeInventory();renderInventory();
+ if(isHost&&multiplayer)multiMessage({type:'settings',gameMode,difficulty});
+};
+document.getElementById('diffEasy').onclick=()=>setDifficulty('easy');
+document.getElementById('diffNormal').onclick=()=>setDifficulty('normal');
+document.getElementById('diffHard').onclick=()=>setDifficulty('hard');
+applyCreativeInventory();updateHUD();updateModeButtonsAccess();
+
+
+document.getElementById('multiBtn').addEventListener('click',()=>{
+ document.getElementById('multi').style.display='block';
+ document.getElementById('nick').value=myName;
+ document.getElementById('room').value='';
+ setTimeout(()=>document.getElementById('nick').focus(),50);
+});
+function closeMultiplayer(){
+  const panel=document.getElementById('multi');
+  if(panel)panel.style.display='none';
+}
+document.getElementById('closeMulti').onclick=closeMultiplayer;
+document.getElementById('closeMultiTop').onclick=closeMultiplayer;
+document.getElementById('multi').addEventListener('click',e=>{
+  if(e.target.id==='multi')closeMultiplayer();
+});
+document.getElementById('createRoom').onclick=()=>{
+ myName=(document.getElementById('nick').value.trim()||'Oyuncu').slice(0,14);
+ createRoom();
+ document.getElementById('room').value='';
+};
+document.getElementById('joinRoom').onclick=()=>{
+ myName=(document.getElementById('nick').value.trim()||'Oyuncu').slice(0,14);
+ const input=document.getElementById('room');
+ let code=input.value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+ if(!code){input.focus();toast('🔑 Önce oda kodunu yaz!');return}
+ input.value=code;
+ connectRoom(code);
+};
+document.getElementById('room').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('joinRoom').click()});
+document.getElementById('serverBtn').onclick=askServer;
+document.getElementById('copyRoom').onclick=async()=>{
+ if(!roomCode){toast('Önce oda oluştur!');return}
+ try{await navigator.clipboard.writeText(roomCode);toast('📋 Oda kodu kopyalandı!')}
+ catch(e){const inp=document.getElementById('room');inp.value=roomCode;inp.focus();inp.select();toast('Kodu seçtim, Ctrl+C ile kopyala')}
+};
+document.getElementById('sendChat').onclick=()=>{
+ let inp=document.getElementById('chatInput'),text=inp.value.trim();if(!text)return;
+ if(!multiplayer){addChat('Sistem','Önce bir odaya katıl.');return}
+ addChat(myName,text);multiMessage({type:'chat',text});inp.value='';
+};
+document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('sendChat').click()});
+window.addEventListener('beforeunload',()=>{if(channel){try{multiMessage({type:'leave'})}catch(e){}}try{if(peer)peer.destroy()}catch(e){}});
+
+// ===== BlockCraft Plugin Loader =====
+const pluginStoreKey='blockcraft_plugins_v2';
+function getPlugins(){try{return JSON.parse(localStorage.getItem(pluginStoreKey)||'[]')}catch(e){return []}}
+function savePlugins(a){localStorage.setItem(pluginStoreKey,JSON.stringify(a));renderPlugins()}
+function renderPlugins(){
+ const box=document.getElementById('pluginList'); if(!box)return; box.innerHTML='';
+ const ps=getPlugins();
+ if(!ps.length){box.innerHTML='<div class="pluginCard">📭 Yüklü plugin yok.</div>';return}
+ ps.forEach((pl,i)=>{
+   const d=document.createElement('div');d.className='pluginCard';
+   const active=activePlugin&&activePlugin.id===pl.id;
+   d.innerHTML='<b>🔌 '+escapeHtml(pl.name||pl.file||'BlockCraft Plugin')+'</b><br><small>Sürüm: '+escapeHtml(pl.version||'1.0.0')+'</small><br>'+
+     (active?'<span class="pluginOk">🟢 AKTİF</span>':'<span class="pluginOk">📦 Yüklü</span>')+
+     ' <button class="mbtn dark" data-run="'+i+'">'+(active?'Durdur':'Başlat')+'</button> <button class="mbtn dark" data-del="'+i+'">Sil</button>';
+   box.appendChild(d);
+ });
+ box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+   if(activePlugin&&activePlugin.id===getPlugins()[+b.dataset.del].id) deactivatePlugin();
+   let ps=getPlugins();ps.splice(+b.dataset.del,1);savePlugins(ps);toast('🗑️ Plugin kaldırıldı');
+ });
+ box.querySelectorAll('[data-run]').forEach(b=>b.onclick=async()=>{
+   const pl=getPlugins()[+b.dataset.run];
+   if(activePlugin&&activePlugin.id===pl.id){deactivatePlugin();renderPlugins();return}
+   await activatePlugin(pl); renderPlugins();
+ });
+}
+function openPluginPanel(){document.getElementById('pluginPanel').style.display='flex';renderPlugins()}
+document.getElementById('pluginBtn').onclick=openPluginPanel;
+document.getElementById('closePlugin').onclick=()=>document.getElementById('pluginPanel').style.display='none';
+document.getElementById('pluginPanel').addEventListener('click',e=>{if(e.target.id==='pluginPanel')e.currentTarget.style.display='none'});
+function pluginApi(){
+ return {
+   version:1,
+   game:{
+     getPlayer:()=>({id:myId,name:myName,x:p.x,y:p.y,hp:health}),
+     getRoom:()=>roomCode,
+     isHost:()=>isHost,
+     toast, addChat,
+   },
+   // Eski/yeni plugin sürümleri için uyumluluk kısayolları
+   toast,
+   addChat,
+   showToast:toast,
+   net:{
+     send:(data)=>multiMessage(data),
+     isConnected:()=>!!(multiplayer&&channel&&channel.open)
+   },
+   setChannelFactory:(fn)=>{ if(typeof fn==='function') activePlugin.makeChannel=fn; },
+   onMessage:(fn)=>{ activePlugin.messageHandlers.push(fn); },
+   onActivate:()=>{},
+   onDeactivate:()=>{}
+ };
+}
+async function activatePlugin(pl){
+ try{
+   deactivatePlugin();
+   activePlugin={...pl,makeChannel:null,messageHandlers:[]};
+   if(pl.code){
+     const api=pluginApi();
+     const factory=new Function('BlockCraft',pl.code+'\n//# sourceURL=BlockCraftPlugin.js\n');
+     const result=factory(api);
+     if(result && typeof result.activate==='function') await result.activate(api);
+     else if(typeof window.BlockCraftPluginActivate==='function') await window.BlockCraftPluginActivate(api);
+   }
+   if(typeof activePlugin.makeChannel!=='function') throw new Error('Bu plugin bir bağlantı sağlayıcısı içermiyor.');
+   toast('🟢 '+(pl.name||'Plugin')+' aktif');
+   document.getElementById('pluginStatus').innerHTML='<span class="pluginOk">🟢 '+escapeHtml(pl.name||'Plugin')+' aktif. Artık oyun + plugin birlikte çalışıyor.</span>';
+ }catch(err){
+   activePlugin=null; toast('❌ Plugin başlatılamadı');
+   document.getElementById('pluginStatus').innerHTML='<span class="pluginWarn">❌ Plugin başlatılamadı: '+escapeHtml(err.message)+'</span>';
+ }
+}
+function deactivatePlugin(){
+ try{if(activePlugin&&typeof activePlugin.onDeactivate==='function')activePlugin.onDeactivate()}catch(e){}
+ try{if(channel)channel.close()}catch(e){}
+ activePlugin=null; pluginChannel=null;
+}
+document.getElementById('pluginFile').addEventListener('change',async e=>{
+ const file=e.target.files[0]; if(!file)return; const status=document.getElementById('pluginStatus');
+ status.innerHTML='⏳ Plugin okunuyor...';
+ try{
+  let meta={id:'pl_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7),name:file.name,version:'1.0.0',file:file.name,type:'file'};
+  if(file.name.toLowerCase().endsWith('.zip')){
+   if(!window.JSZip)throw new Error('ZIP okuyucu yüklenemedi. İnternet bağlantısını kontrol et.');
+   const zip=await JSZip.loadAsync(await file.arrayBuffer());
+   const names=Object.keys(zip.files).filter(n=>!zip.files[n].dir);
+   const manifestName=names.find(n=>/(^|\/)plugin\.json$/i.test(n)) || names.find(n=>/(^|\/)package\.json$/i.test(n));
+   let manifest={};
+   if(manifestName){try{manifest=JSON.parse(await zip.files[manifestName].async('text'))}catch(_){} }
+   const jsName=(manifest.main&&names.includes(manifest.main)?manifest.main:null)||names.find(n=>/(^|\/)(plugin|index|main)\.js$/i.test(n))||names.find(n=>/\.js$/i.test(n));
+   if(jsName)meta.code=await zip.files[jsName].async('text');
+   meta={...meta,...manifest,name:manifest.name||meta.name,version:manifest.version||meta.version,main:jsName||'',manifest:manifestName||'',files:names.length};
+   if(!meta.code)throw new Error('Plugin içinde çalıştırılabilir .js dosyası bulunamadı.');
+   const ps=getPlugins().filter(p=>p.file!==file.name);ps.push(meta);savePlugins(ps);
+   status.innerHTML='<span class="pluginOk">✅ '+escapeHtml(meta.name)+' yüklendi!</span><br>📦 '+names.length+' dosya bulundu.<br>🧩 Ana dosya: '+escapeHtml(jsName||'-')+'<br><button class="mbtn" id="activateNow">🟢 Plugin ile Devam Et</button>';
+   document.getElementById('activateNow').onclick=async()=>{await activatePlugin(meta);renderPlugins()};
+   toast('🔌 Plugin yüklendi');
+   // Multiplayer pluginlerini yükler yüklemez etkinleştir.
+   await activatePlugin(meta); renderPlugins();
+  }else if(file.name.toLowerCase().endsWith('.js')){
+   meta.code=await file.text();
+   const ps=getPlugins().filter(p=>p.file!==file.name);ps.push(meta);savePlugins(ps);
+   status.innerHTML='<span class="pluginOk">✅ '+escapeHtml(meta.name)+' yüklendi!</span><br><button class="mbtn" id="activateNow">🟢 Plugin ile Devam Et</button>';
+   document.getElementById('activateNow').onclick=async()=>{await activatePlugin(meta);renderPlugins()};
+   toast('🔌 Plugin yüklendi');
+   await activatePlugin(meta); renderPlugins();
+  }else{
+   const text=await file.text(); const m=JSON.parse(text); meta={...meta,...m};
+   if(m.main)throw new Error('Tek başına manifest dosyası çalıştırılamaz; .zip veya .js yükle.');
+   const ps=getPlugins().filter(p=>p.file!==file.name);ps.push(meta);savePlugins(ps);
+   status.innerHTML='<span class="pluginOk">✅ '+escapeHtml(meta.name)+' manifesti yüklendi.</span>';
+  }
+ }catch(err){status.innerHTML='<span class="pluginWarn">❌ Plugin yüklenemedi: '+escapeHtml(err.message)+'</span>';toast('❌ Plugin yüklenemedi')}
+ e.target.value='';
+});
+renderPlugins();
+</script>
+</body>
+</html>
